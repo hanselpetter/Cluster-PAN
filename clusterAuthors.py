@@ -247,97 +247,98 @@ def readCorpus(input):
 def main(input,output, clusterAlg, weight, numFeat):
     #Reading corpus
     DicProblem, DicCluster, DicLink = readCorpus(input)
-    print "Clustering with 50 to",numFeat,"features..."
-    for N in range(20000,20001,50):
-        cont, spr, sre, sfs, sav = 0,0,0,0,0
-        #Extraing features of documents
-        for directory in DicProblem: 
-            #Vectores de caracteristicas por documento
-            doc_vecs={}
-            for filen in DicProblem[directory]:
-                with codecs.open(filen, encoding="utf-8") as fid:
-                    filename=filen.split('/')[-1]
-                    text = fid.read()
-                    #character n-grams
-                    vec=dict(characterNgrams(text,2))
-                    vec.update(dict(characterNgrams(text,3)))
-                    vec.update(dict(characterNgrams(text,4)))
-                    vec.update(dict(characterNgrams(text,5)))
-                    vec.update(dict(characterNgrams(text,6)))
-                    vec.update(dict(characterNgrams(text,7)))
-                    vec.update(dict(characterNgrams(text,8)))
-                    #word n-grams
-                    vec.update(dict(wordsVector(text)))
-                    vec.update(dict(wordsNgrams(text,2)))
-                    vec.update(dict(wordsNgrams(text,3)))
-                    #character typed n-grams
-                    vec.update(dict(typedNgrams(text,3)))
-                    vec.update(dict(typedNgrams(text,4)))
-                    #stylometric features
-                    vec.update(stylometricFeatures(text))
-                    
-                    doc_vecs[filename] = vec
-            
-            #transform into matrix of n samples and m features
-            v = DictVectorizer()
-            X = v.fit_transform(doc_vecs.values())
-            
-            #Keeping feature above threshold N
-            #sum all values in column
-            values=np.sum(X,axis=0)
-            #get indices of the N most common values
-            #print "Max features",len(values.getA()[0])
-            indices=np.argsort(values[0],axis=1)[0,-N:]
-            #select columns with the indices list
-            X=X[:,indices.getA()[0]]
-            ndoc,nterm=X.shape
-            
-            #applying weighting scheme
-            if weight == 'logEnt':
-                Xc = Scipy2Corpus(X)
-                log_ent=LogEntropyModel(Xc)
-                X=log_ent[Xc]
-                X=corpus2csc(X,num_terms=nterm,num_docs=ndoc)
-                X=sp.csc_matrix.transpose(X)
-            elif weight == 'tfidf':
-                transformer = TfidfTransformer()
-                X = transformer.fit_transform(X)
-
-            X=X.toarray()
-            
-            if clusterAlg == 'hierarchical' :
-                clusters=linkageCluster(X,len(doc_vecs))
-            else:#kmeans
-                clusters=kmeansCluster(X,len(doc_vecs))
-            
-            clustering=[]
-            for i in range(len(clusters)):
-                clustering.append((doc_vecs.keys()[i],clusters[i]))
+    print "Clustering with",numFeat,"features..."
+    N=numFeat
+    cont, spr, sre, sfs, sav = 0,0,0,0,0
+    #Extraing features of documents
+    for directory in DicProblem:
+        print directory 
+        #Vectores de caracteristicas por documento
+        doc_vecs={}
+        for filen in DicProblem[directory]:
+            with codecs.open(filen, encoding="utf-8") as fid:
+                filename=filen.split('/')[-1]
+                text = fid.read()
+                #character n-grams
+                vec=dict(characterNgrams(text,2))
+                vec.update(dict(characterNgrams(text,3)))
+                vec.update(dict(characterNgrams(text,4)))
+                vec.update(dict(characterNgrams(text,5)))
+                vec.update(dict(characterNgrams(text,6)))
+                vec.update(dict(characterNgrams(text,7)))
+                vec.update(dict(characterNgrams(text,8)))
+                #word n-grams
+                vec.update(dict(wordsVector(text)))
+                vec.update(dict(wordsNgrams(text,2)))
+                vec.update(dict(wordsNgrams(text,3)))
+                #character typed n-grams
+                vec.update(dict(typedNgrams(text,3)))
+                vec.update(dict(typedNgrams(text,4)))
+                #stylometric features
+                vec.update(stylometricFeatures(text))
                 
-            outfileDir=output+'/'+directory
-            if not os.path.exists(outfileDir):
-                os.mkdir(outfileDir)
+                doc_vecs[filename] = vec
+        
+        #transform into matrix of n samples and m features
+        v = DictVectorizer()
+        X = v.fit_transform(doc_vecs.values())
+        
+        #Keeping feature above threshold N
+        #sum all values in column
+        values=np.sum(X,axis=0)
+        #get indices of the N most common values
+        #print "Max features",len(values.getA()[0])
+        indices=np.argsort(values[0],axis=1)[0,-N:]
+        #select columns with the indices list
+        X=X[:,indices.getA()[0]]
+        ndoc,nterm=X.shape
+        
+        #applying weighting scheme
+        if weight == 'logEnt':
+            Xc = Scipy2Corpus(X)
+            log_ent=LogEntropyModel(Xc)
+            X=log_ent[Xc]
+            X=corpus2csc(X,num_terms=nterm,num_docs=ndoc)
+            X=sp.csc_matrix.transpose(X)
+        elif weight == 'tfidf':
+            transformer = TfidfTransformer()
+            X = transformer.fit_transform(X)
+
+        X=X.toarray()
+        
+        if clusterAlg == 'hierarchical' :
+            clusters=linkageCluster(X,len(doc_vecs))
+        else:#kmeans
+            clusters=kmeansCluster(X,len(doc_vecs))
+        
+        clustering=[]
+        for i in range(len(clusters)):
+            clustering.append((doc_vecs.keys()[i],clusters[i]))
             
-            #Evaluation measures
-            clDict, goldDict=bcubedInput(DicCluster[directory],clustering)
-            pr, re, fs= computeBcubed("Prueba", clDict, goldDict)
-                        
-            #generate clustering output files
-            clusteringOut={}
-            for i in range(len(clusters)):
-                clusteringOut.setdefault(clusters[i],[]).append(doc_vecs.keys()[i])
-            generateClusteringFile(clusteringOut,outfileDir)
-            
-            #calculate cosine similarity
-            cos_mat=cosine_similarity(X)
-            LinksScore=generateRankingsFile(cos_mat,doc_vecs.keys(),outfileDir)
-            av=averagePrecision(DicLink[directory], LinksScore)
-            cont+=1
-            spr+=pr
-            sre+=re
-            sfs+=fs
-            sav+=av
-        print "Number of features", N, "Mean F-Score", sfs/cont, "MAP", sav/cont
+        outfileDir=output+'/'+directory
+        if not os.path.exists(outfileDir):
+            os.mkdir(outfileDir)
+        
+        #Evaluation measures
+        clDict, goldDict=bcubedInput(DicCluster[directory],clustering)
+        pr, re, fs= computeBcubed("Prueba", clDict, goldDict)
+                    
+        #generate clustering output files
+        clusteringOut={}
+        for i in range(len(clusters)):
+            clusteringOut.setdefault(clusters[i],[]).append(doc_vecs.keys()[i])
+        generateClusteringFile(clusteringOut,outfileDir)
+        
+        #calculate cosine similarity
+        cos_mat=cosine_similarity(X)
+        LinksScore=generateRankingsFile(cos_mat,doc_vecs.keys(),outfileDir)
+        av=averagePrecision(DicLink[directory], LinksScore)
+        cont+=1
+        spr+=pr
+        sre+=re
+        sfs+=fs
+        sav+=av
+    print "Number of features", N, "Mean F-Score", sfs/cont, "MAP", sav/cont
 
 
 #########################################################################################
