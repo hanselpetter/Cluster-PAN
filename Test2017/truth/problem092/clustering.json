@@ -1,0 +1,30 @@
+[
+	[
+		{"document": "document0001.txt"}
+	],
+	[
+		{"document": "document0003.txt"},
+		{"document": "document0008.txt"},
+		{"document": "document0010.txt"},
+		{"document": "document0013.txt"},
+		{"document": "document0014.txt"},
+		{"document": "document0015.txt"},
+		{"document": "document0019.txt"}
+	],
+	[
+		{"document": "document0004.txt"},
+		{"document": "document0006.txt"},
+		{"document": "document0007.txt"},
+		{"document": "document0012.txt"},
+		{"document": "document0017.txt"},
+		{"document": "document0020.txt"}
+	],
+	[
+		{"document": "document0002.txt"},
+		{"document": "document0005.txt"},
+		{"document": "document0009.txt"},
+		{"document": "document0011.txt"},
+		{"document": "document0016.txt"},
+		{"document": "document0018.txt"}
+	]
+]
