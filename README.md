@@ -10,6 +10,8 @@ competition.
 You can find the paper describing our approach at
 <http://ceur-ws.org/Vol-1866/paper_108.pdf>.
 
+The author clustering training and test corpus are provided here, but if you use them, cite the corresponding paper: http://ceur-ws.org/Vol-1866/invited_paper_3.pdf
+
 # Python 2.7 Requirements #
 
 * Numpy
